@@ -1,0 +1,50 @@
+{
+  "policy_domain": [
+    "example.com"
+  ],
+  "header_from": [
+    "marketing.example.com",
+    "newsletter.example.com",
+    "subdomain.example.com",
+    "different-example.com",
+    "example.com",
+    "temp-issue.example.com",
+    "multiservice.example.com",
+    "partner.example.com"
+  ],
+  "envelope_from": [
+    "marketing.example.com",
+    "suspicious.example.net",
+    "thirdparty.example.org",
+    "example.com",
+    "temp-issue.example.com",
+    "mta.example.org",
+    "multiservice.example.com",
+    "partner.example.com",
+    "unknown.sender.example.net",
+    "relay.different-example.com"
+  ],
+  "dkim": [
+    "marketing.example.com",
+    "newsletter.example.com",
+    "subdomain.example.com",
+    "different-example.com",
+    "example.com",
+    "thirdparty.example.net",
+    "temp-issue.example.com",
+    "multiservice.example.com",
+    "partner.example.com"
+  ],
+  "spf": [
+    "marketing.example.com",
+    "suspicious.example.net",
+    "thirdparty.example.org",
+    "example.com",
+    "temp-issue.example.com",
+    "mta.example.org",
+    "multiservice.example.com",
+    "partner.example.com",
+    "unknown.sender.example.net",
+    "relay.different-example.com"
+  ]
+}

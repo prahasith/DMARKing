@@ -1,0 +1,133 @@
+{
+  "example.com": {
+    "total_messages": 33,
+    "passing_dkim": 28,
+    "passing_spf": 28,
+    "failing_dkim": 5,
+    "failing_spf": 5,
+    "source_ips": [
+      "192.0.2.100",
+      "192.0.2.225",
+      "203.0.113.15"
+    ],
+    "unique_ip_count": 3,
+    "dispositions": {
+      "none": 31,
+      "reject": 2
+    },
+    "dkim_pass_rate": 84.85,
+    "spf_pass_rate": 84.85
+  },
+  "marketing.example.com": {
+    "total_messages": 15,
+    "passing_dkim": 0,
+    "passing_spf": 15,
+    "failing_dkim": 15,
+    "failing_spf": 0,
+    "source_ips": [
+      "203.0.113.16"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 15
+    },
+    "dkim_pass_rate": 0.0,
+    "spf_pass_rate": 100.0
+  },
+  "newsletter.example.com": {
+    "total_messages": 7,
+    "passing_dkim": 7,
+    "passing_spf": 0,
+    "failing_dkim": 0,
+    "failing_spf": 7,
+    "source_ips": [
+      "198.51.100.24"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 7
+    },
+    "dkim_pass_rate": 100.0,
+    "spf_pass_rate": 0.0
+  },
+  "different-example.com": {
+    "total_messages": 12,
+    "passing_dkim": 12,
+    "passing_spf": 0,
+    "failing_dkim": 0,
+    "failing_spf": 12,
+    "source_ips": [
+      "203.0.113.100"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 12
+    },
+    "dkim_pass_rate": 100.0,
+    "spf_pass_rate": 0.0
+  },
+  "subdomain.example.com": {
+    "total_messages": 5,
+    "passing_dkim": 0,
+    "passing_spf": 0,
+    "failing_dkim": 5,
+    "failing_spf": 5,
+    "source_ips": [
+      "198.51.100.27"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "quarantine": 5
+    },
+    "dkim_pass_rate": 0.0,
+    "spf_pass_rate": 0.0
+  },
+  "multiservice.example.com": {
+    "total_messages": 18,
+    "passing_dkim": 18,
+    "passing_spf": 18,
+    "failing_dkim": 0,
+    "failing_spf": 0,
+    "source_ips": [
+      "203.0.113.200"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 18
+    },
+    "dkim_pass_rate": 100.0,
+    "spf_pass_rate": 100.0
+  },
+  "partner.example.com": {
+    "total_messages": 9,
+    "passing_dkim": 9,
+    "passing_spf": 0,
+    "failing_dkim": 0,
+    "failing_spf": 9,
+    "source_ips": [
+      "198.51.100.135"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 9
+    },
+    "dkim_pass_rate": 100.0,
+    "spf_pass_rate": 0.0
+  },
+  "temp-issue.example.com": {
+    "total_messages": 1,
+    "passing_dkim": 1,
+    "passing_spf": 0,
+    "failing_dkim": 0,
+    "failing_spf": 1,
+    "source_ips": [
+      "203.0.113.87"
+    ],
+    "unique_ip_count": 1,
+    "dispositions": {
+      "none": 1
+    },
+    "dkim_pass_rate": 100.0,
+    "spf_pass_rate": 0.0
+  }
+}
