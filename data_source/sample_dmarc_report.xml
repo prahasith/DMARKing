@@ -79,7 +79,100 @@
     </auth_results>
   </record>
   
-  <!-- Record 3: DKIM pass but SPF fail -->
+  <!-- Record 3: CitizensBank.com with selector1 - DKIM pass, SPF pass -->
+  <record>
+    <row>
+      <source_ip>192.168.10.45</source_ip>
+      <count>32</count>
+      <policy_evaluated>
+        <disposition>none</disposition>
+        <dkim>pass</dkim>
+        <spf>pass</spf>
+      </policy_evaluated>
+    </row>
+    <identifiers>
+      <header_from>citizensbank.com</header_from>
+      <envelope_from>mail.citizensbank.com</envelope_from>
+      <envelope_to>recipient.com</envelope_to>
+    </identifiers>
+    <auth_results>
+      <dkim>
+        <domain>citizensbank.com</domain>
+        <result>pass</result>
+        <selector>selector1</selector>
+      </dkim>
+      <spf>
+        <domain>mail.citizensbank.com</domain>
+        <result>pass</result>
+        <scope>mfrom</scope>
+      </spf>
+    </auth_results>
+  </record>
+  
+  <!-- Record 4: CitizensBank.com with selector2 - DKIM pass, SPF pass -->
+  <record>
+    <row>
+      <source_ip>192.168.10.46</source_ip>
+      <count>18</count>
+      <policy_evaluated>
+        <disposition>none</disposition>
+        <dkim>pass</dkim>
+        <spf>pass</spf>
+      </policy_evaluated>
+    </row>
+    <identifiers>
+      <header_from>citizensbank.com</header_from>
+      <envelope_from>alerts.citizensbank.com</envelope_from>
+      <envelope_to>recipient.com</envelope_to>
+    </identifiers>
+    <auth_results>
+      <dkim>
+        <domain>citizensbank.com</domain>
+        <result>pass</result>
+        <selector>selector2</selector>
+      </dkim>
+      <spf>
+        <domain>alerts.citizensbank.com</domain>
+        <result>pass</result>
+        <scope>mfrom</scope>
+      </spf>
+    </auth_results>
+  </record>
+  
+  <!-- Record 5: Another example of CitizensBank.com with selector1 but failing SPF -->
+  <record>
+    <row>
+      <source_ip>203.0.113.50</source_ip>
+      <count>7</count>
+      <policy_evaluated>
+        <disposition>none</disposition>
+        <dkim>pass</dkim>
+        <spf>fail</spf>
+        <reason>
+          <type>local_policy</type>
+          <comment>SPF strict alignment required</comment>
+        </reason>
+      </policy_evaluated>
+    </row>
+    <identifiers>
+      <header_from>citizensbank.com</header_from>
+      <envelope_from>thirdparty.example.org</envelope_from>
+    </identifiers>
+    <auth_results>
+      <dkim>
+        <domain>citizensbank.com</domain>
+        <result>pass</result>
+        <selector>selector1</selector>
+      </dkim>
+      <spf>
+        <domain>thirdparty.example.org</domain>
+        <result>pass</result>
+        <scope>mfrom</scope>
+      </spf>
+    </auth_results>
+  </record>
+  
+  <!-- Record 6: DKIM pass but SPF fail -->
   <record>
     <row>
       <source_ip>198.51.100.24</source_ip>
@@ -112,7 +205,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 4: Both SPF and DKIM fail -->
+  <!-- Record 7: Both SPF and DKIM fail -->
   <record>
     <row>
       <source_ip>192.0.2.100</source_ip>
@@ -147,7 +240,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 5: Different domain with misaligned SPF -->
+  <!-- Record 8: Different domain with misaligned SPF -->
   <record>
     <row>
       <source_ip>203.0.113.100</source_ip>
@@ -176,7 +269,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 6: Subdomain with quarantine disposition -->
+  <!-- Record 9: Subdomain with quarantine disposition -->
   <record>
     <row>
       <source_ip>198.51.100.27</source_ip>
@@ -205,7 +298,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 7: Multiple DKIM signatures -->
+  <!-- Record 10: Multiple DKIM signatures -->
   <record>
     <row>
       <source_ip>203.0.113.200</source_ip>
@@ -239,7 +332,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 8: Reject disposition -->
+  <!-- Record 11: Reject disposition -->
   <record>
     <row>
       <source_ip>192.0.2.225</source_ip>
@@ -268,7 +361,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 9: Another domain with neutral SPF -->
+  <!-- Record 12: Another domain with neutral SPF -->
   <record>
     <row>
       <source_ip>198.51.100.135</source_ip>
@@ -297,7 +390,7 @@
     </auth_results>
   </record>
   
-  <!-- Record 10: Temporary SPF error -->
+  <!-- Record 13: Temporary SPF error -->
   <record>
     <row>
       <source_ip>203.0.113.87</source_ip>

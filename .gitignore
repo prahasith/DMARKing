@@ -1,3 +1,4 @@
 .venv/*
 dkim_selectors.db
 dmarc_domain_stats.db
+data_source/sample_dmarc_report.xml
