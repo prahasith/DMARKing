@@ -328,7 +328,7 @@ if __name__ == "__main__":
     
     if len(sys.argv) < 2:
         # Default file path when no argument is provided
-        report_file = '/Users/praha/Desktop/DMARKing/data/sample_dmarc_report.xml'
+        report_file = '/Users/praha/Desktop/DMARKing/data_source/sample_dmarc_report.xml'
         print(f"No file specified, using default: {report_file}")
     else:
         report_file = sys.argv[1]

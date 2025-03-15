@@ -1,8 +1,5 @@
 import os
 from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-from backend.parsers.dmarc_parser import parse_dmarc_report
-from backend.models.database import SessionLocal, DMARCReport
 from datetime import datetime
 
 app = FastAPI()
