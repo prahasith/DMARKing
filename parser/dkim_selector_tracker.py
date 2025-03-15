@@ -1,6 +1,6 @@
 import sqlite3
 import dns.resolver
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import json
 import time
@@ -38,6 +38,7 @@ class DkimSelectorTracker:
             last_seen_date TEXT NOT NULL,            -- When this selector was last observed
             last_dns_check TEXT,                     -- When DNS was last checked
             age_days INTEGER DEFAULT 0,              -- Age of the key in days
+            key_creation_date TEXT,                  -- When the key was first created/detected
             is_active BOOLEAN DEFAULT 1,             -- Whether the selector is still active
             dns_exists BOOLEAN,                      -- Whether DNS record exists
             total_pass_count INTEGER DEFAULT 0,      -- Total pass results
@@ -51,6 +52,13 @@ class DkimSelectorTracker:
         cursor.execute('''
         CREATE INDEX IF NOT EXISTS idx_dkim_selectors_domain ON dkim_selectors(domain)
         ''')
+        
+        # Check if age tracking columns exist, add if needed
+        cursor.execute("PRAGMA table_info(dkim_selectors)")
+        columns = [info[1] for info in cursor.fetchall()]
+        
+        if 'key_creation_date' not in columns:
+            cursor.execute('ALTER TABLE dkim_selectors ADD COLUMN key_creation_date TEXT')
         
         self.conn.commit()
         cursor.close()
@@ -109,7 +117,8 @@ class DkimSelectorTracker:
             # Check if this selector is already in the database
             cursor.execute('''
             SELECT selector_id, first_seen_date, dkim_key, last_dns_check, 
-                   total_pass_count, total_fail_count, is_active
+                   total_pass_count, total_fail_count, is_active, 
+                   key_creation_date, age_days
             FROM dkim_selectors
             WHERE domain = ? AND selector = ?
             ''', (domain, selector))
@@ -128,6 +137,8 @@ class DkimSelectorTracker:
             
             dns_exists = False
             dkim_key = None
+            key_creation_date = None
+            age_days = 0
             
             if dns_check_needed:
                 dns_exists, dkim_key = self.lookup_dkim_record(domain, selector)
@@ -144,25 +155,35 @@ class DkimSelectorTracker:
                 else:
                     fail_count += 1
                 
-                # Calculate age - reset to 0 if we found a new DNS record
-                first_seen = datetime.fromisoformat(existing['first_seen_date'])
-                age_days = (datetime.now() - first_seen).days
+                # Handle key creation date and age
+                if existing['key_creation_date']:
+                    key_creation_date = existing['key_creation_date']
+                    # Calculate age based on key creation date
+                    creation_dt = datetime.fromisoformat(key_creation_date)
+                    age_days = (datetime.now() - creation_dt).days
+                else:
+                    # If no creation date stored but we have a key, use first seen date
+                    key_creation_date = existing['first_seen_date']
+                    creation_dt = datetime.fromisoformat(key_creation_date)
+                    age_days = (datetime.now() - creation_dt).days
                 
-                # If the DNS record changed, reset age to 0
+                # If the DNS record changed, reset creation date and age
                 if dns_check_needed and dns_exists and dkim_key and existing['dkim_key'] != dkim_key:
+                    key_creation_date = current_date
                     age_days = 0
                 
-                # Keep existing DKIM key if we didn't check DNS
+                # Keep existing values if we didn't check DNS
                 if not dns_check_needed:
                     dkim_key = existing['dkim_key']
                     dns_exists = existing['dns_exists'] if 'dns_exists' in existing else None
-                
+                    
                 # Update the record
                 cursor.execute('''
                 UPDATE dkim_selectors SET
                     last_seen_date = ?,
                     dkim_key = ?,
                     last_dns_check = ?,
+                    key_creation_date = ?,
                     age_days = ?,
                     dns_exists = ?,
                     is_active = ?,
@@ -174,6 +195,7 @@ class DkimSelectorTracker:
                     current_date,
                     dkim_key,
                     current_date if dns_check_needed else existing['last_dns_check'],
+                    key_creation_date,
                     age_days,
                     dns_exists,
                     True,  # Still active since we just saw it
@@ -185,12 +207,16 @@ class DkimSelectorTracker:
                 
             else:
                 # Insert new record
+                # For new records, key creation date is now
+                key_creation_date = current_date
+                age_days = 0
+                
                 cursor.execute('''
                 INSERT INTO dkim_selectors (
                     domain, selector, dkim_key, first_seen_date, last_seen_date,
-                    last_dns_check, age_days, is_active, dns_exists,
+                    last_dns_check, key_creation_date, age_days, is_active, dns_exists,
                     total_pass_count, total_fail_count, last_result
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     domain,
                     selector,
@@ -198,7 +224,8 @@ class DkimSelectorTracker:
                     current_date,
                     current_date,
                     current_date if dns_check_needed else None,
-                    0,  # New record, so age is 0
+                    key_creation_date,
+                    age_days,
                     True,  # Active
                     dns_exists,
                     1 if result.lower() == 'pass' else 0,
@@ -214,6 +241,42 @@ class DkimSelectorTracker:
             raise
         finally:
             cursor.close()
+    
+    def update_key_ages(self):
+        """
+        Update all key ages based on creation dates.
+        Call this periodically to keep ages current.
+        """
+        cursor = self.conn.cursor()
+        
+        try:
+            cursor.execute('''
+            SELECT selector_id, key_creation_date 
+            FROM dkim_selectors 
+            WHERE key_creation_date IS NOT NULL
+            ''')
+            
+            records = cursor.fetchall()
+            current_date = datetime.now()
+            
+            for record in records:
+                selector_id = record['selector_id']
+                creation_date = datetime.fromisoformat(record['key_creation_date'])
+                age_days = (current_date - creation_date).days
+                
+                cursor.execute('''
+                UPDATE dkim_selectors 
+                SET age_days = ? 
+                WHERE selector_id = ?
+                ''', (age_days, selector_id))
+            
+            self.conn.commit()
+            return len(records)
+        
+        except Exception as e:
+            print(f"Error updating key ages: {str(e)}")
+            self.conn.rollback()
+            return 0
     
     def process_dmarc_report(self, report_data: Dict[str, Any]):
         """
@@ -236,13 +299,16 @@ class DkimSelectorTracker:
                 
                 if domain and selector:
                     self.track_dkim_selector(domain, selector, result, report_id)
+        
+        # Update key ages after processing
+        self.update_key_ages()
     
     def get_all_selectors(self, domain: Optional[str] = None, active_only: bool = False) -> List[Dict]:
         """
         Get all DKIM selectors from the database.
         
         Args:
-            domain: Optional domain to filter records
+            domain: Optional domain filter
             active_only: Whether to return only active selectors
             
         Returns:
@@ -270,6 +336,28 @@ class DkimSelectorTracker:
         
         return [dict(row) for row in cursor.fetchall()]
     
+    def find_old_keys(self, age_threshold_days: int = 180) -> List[Dict]:
+        """
+        Find DKIM keys that are older than the threshold.
+        
+        Args:
+            age_threshold_days: Age threshold in days
+            
+        Returns:
+            List of old DKIM selector records
+        """
+        # First update all ages to ensure they're current
+        self.update_key_ages()
+        
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        SELECT * FROM dkim_selectors
+        WHERE age_days >= ? AND is_active = 1
+        ORDER BY age_days DESC
+        ''', (age_threshold_days,))
+        
+        return [dict(row) for row in cursor.fetchall()]
+    
     def mark_inactive_selectors(self, days_threshold: int = 30):
         """
         Mark selectors as inactive if they haven't been seen recently.
@@ -280,7 +368,7 @@ class DkimSelectorTracker:
         cursor = self.conn.cursor()
         
         # Calculate cutoff date
-        cutoff_date = (datetime.now() - datetime.timedelta(days=days_threshold)).isoformat()
+        cutoff_date = (datetime.now() - timedelta(days=days_threshold)).isoformat()
         
         cursor.execute('''
         UPDATE dkim_selectors
@@ -298,8 +386,11 @@ class DkimSelectorTracker:
         Print a summary of DKIM selectors.
         
         Args:
-            domain: Optional domain to filter records
+            domain: Optional domain filter
         """
+        # Update ages before display
+        self.update_key_ages()
+        
         selectors = self.get_all_selectors(domain)
         
         print("\n===== DKIM Selectors Summary =====")
@@ -326,7 +417,8 @@ class DkimSelectorTracker:
             
             print(f"  Selector: {sel['selector']}")
             print(f"    Status: {active_status}, {dns_status}")
-            print(f"    Age: {sel['age_days']} days (First seen: {sel['first_seen_date'][:10]})")
+            print(f"    Age: {sel['age_days']} days (Created: {sel.get('key_creation_date', 'unknown')[:10]})")
+            print(f"    First seen: {sel['first_seen_date'][:10]}, Last seen: {sel['last_seen_date'][:10]}")
             print(f"    Pass Rate: {pass_rate}% ({sel['total_pass_count']}/{total})")
             
             if sel['dkim_key']:
@@ -338,18 +430,52 @@ class DkimSelectorTracker:
             
             print()
     
+    def print_old_selectors(self, age_threshold_days: int = 180):
+        """
+        Print a summary of old DKIM selectors.
+        
+        Args:
+            age_threshold_days: Age threshold in days
+        """
+        old_selectors = self.find_old_keys(age_threshold_days)
+        
+        print(f"\n===== Old DKIM Selectors (>{age_threshold_days} days) =====")
+        
+        if not old_selectors:
+            print(f"No DKIM selectors older than {age_threshold_days} days found")
+            return
+        
+        for sel in old_selectors:
+            print(f"Domain: {sel['domain']}, Selector: {sel['selector']}")
+            print(f"  Age: {sel['age_days']} days (Created: {sel.get('key_creation_date', 'unknown')[:10]})")
+            print(f"  Last seen: {sel['last_seen_date'][:10]}")
+            print()
+    
     def export_to_json(self, filename: str, domain: Optional[str] = None):
         """
         Export selector data to JSON file.
         
         Args:
             filename: Output filename
-            domain: Optional domain to filter records
+            domain: Optional domain filter
         """
+        # Update ages before export
+        self.update_key_ages()
+        
         selectors = self.get_all_selectors(domain)
         
+        # Convert SQLite Row objects to dicts for JSON serialization
+        json_compatible = []
+        for selector in selectors:
+            row_dict = dict(selector)
+            # Convert any non-serializable types
+            for key, value in row_dict.items():
+                if isinstance(value, datetime):
+                    row_dict[key] = value.isoformat()
+            json_compatible.append(row_dict)
+        
         with open(filename, 'w') as f:
-            json.dump(selectors, f, indent=2)
+            json.dump(json_compatible, f, indent=2, default=str)
         
         print(f"Exported {len(selectors)} selector records to {filename}")
     
@@ -384,8 +510,11 @@ if __name__ == "__main__":
         
         tracker.process_dmarc_report(report_data)
         
-        # Print summary
+        # Print summaries
         tracker.print_selectors_summary()
+        
+        # Print old selectors (more than 180 days)
+        tracker.print_old_selectors(180)
         
         # Export to JSON
         tracker.export_to_json('dkim_selectors.json')
