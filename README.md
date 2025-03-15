@@ -1,4 +1,3 @@
-<!--
 This project is designed to parse and analyze DMARC reports sent by email providers.
 DMARC (Domain-based Message Authentication, Reporting, and Conformance) is an email
 authentication protocol that helps prevent email spoofing and phishing.
@@ -15,4 +14,3 @@ This tool is particularly useful for organizations that want to:
 
 Future enhancements may include a web interface, automated report fetching from
 email accounts, and more advanced visualization capabilities.
--->
