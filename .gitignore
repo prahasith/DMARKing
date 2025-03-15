@@ -1,1 +1,3 @@
 .venv/*
+dkim_selectors.db
+dmarc_domain_stats.db
